@@ -533,7 +533,12 @@ export const DailyPrescriptionsModal: React.FC<DailyPrescriptionsModalProps> = (
                       )}
 
                       {/* Correction Indicator */}
-                      {dose.historyEntry?.is_corrected && (
+                      {dose.historyEntry && (() => {
+                        const scheduledDateTime = dose.scheduledDateTime;
+                        const actualDateTime = new Date(dose.historyEntry.actual_taken_datetime);
+                        const timeDiffMinutes = Math.abs((actualDateTime.getTime() - scheduledDateTime.getTime()) / (1000 * 60));
+                        return timeDiffMinutes > 1; // Show corrected if more than 1 minute difference
+                      })() && (
                         <div className="mt-2 inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
                           <AlertCircle className="w-3 h-3 mr-1" />
                           Time was corrected after initial entry
