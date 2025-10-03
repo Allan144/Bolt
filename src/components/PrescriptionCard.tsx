@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns';
-import { Pill, Clock, Calendar, MoreVertical, Edit, Trash2, Check, X, AlertCircle, Settings, History } from 'lucide-react';
+import { Pill, Clock, Calendar, MoveVertical as MoreVertical, CreditCard as Edit, Trash2, Check, X, CircleAlert as AlertCircle, Settings, History } from 'lucide-react';
 import { Prescription, MedicationLog, DoseSchedule, generateScheduledTimes } from '../lib/supabase';
 import { triggerHaptic } from '../lib/capacitor';
 import { MedicationImage } from './MedicationImage';
