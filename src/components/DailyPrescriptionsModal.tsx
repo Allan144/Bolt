@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, startOfDay, endOfDay, addDays, isSameDay } from 'date-fns';
-import { X, Calendar, Clock, Check, AlertCircle, Pill, Filter, Download, RefreshCw } from 'lucide-react';
+import { X, Calendar, Clock, Check, CircleAlert as AlertCircle, Pill, ListFilter as Filter, Download, RefreshCw } from 'lucide-react';
 import { Prescription, DoseSchedule, MedicationLog, MedicationHistory, supabase, AuthUser, generateScheduledTimes } from '../lib/supabase';
 import { MedicationImage } from './MedicationImage';
 
