@@ -427,6 +427,16 @@ export const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                 <p className="text-xs text-gray-500 mt-1">
                   You can adjust this if you took it earlier than now
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const scheduledDateTime = format(showTakenDialog.scheduledTime, "yyyy-MM-dd'T'HH:mm");
+                    setActualDateTime(scheduledDateTime);
+                  }}
+                  className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                >
+                  Use Scheduled Time
+                </button>
               </div>
               
               {/* Schedule Correction Toggle */}
