@@ -321,7 +321,12 @@ export const DoseScheduleScreen: React.FC<DoseScheduleScreenProps> = ({
                         {dose.historyEntry && (
                           <div className="text-xs text-gray-500">
                             {format(new Date(dose.historyEntry.actual_taken_datetime), 'h:mm a')}
-                            {dose.historyEntry.is_corrected && (
+                            {(() => {
+                              const scheduledDateTime = dose.scheduledDateTime;
+                              const actualDateTime = new Date(dose.historyEntry.actual_taken_datetime);
+                              const timeDiffMinutes = Math.abs((actualDateTime.getTime() - scheduledDateTime.getTime()) / (1000 * 60));
+                              return timeDiffMinutes > 1; // Show corrected if more than 1 minute difference
+                            })() && (
                               <span className="ml-1 text-orange-600">(corrected)</span>
                             )}
                           </div>
