@@ -453,7 +453,7 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
                       <div className="flex-1">
                         {/* Header */}
                         <div className="flex items-center space-x-3 mb-3">
-                          <MedicationImage 
+                          <MedicationImage
                             drugName={entry.prescription_name}
                             dosage={entry.dosage}
                             size="md"
@@ -463,7 +463,12 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
                             <h4 className="font-bold text-gray-900 text-lg">{entry.prescription_name}</h4>
                             <p className="text-gray-600">{entry.dosage}</p>
                           </div>
-                          {entry.is_corrected && (
+                          {entry.is_corrected && (() => {
+                            const scheduledDateTime = new Date(`${entry.scheduled_date}T${entry.scheduled_time}`);
+                            const actualDateTime = new Date(entry.actual_taken_datetime);
+                            const timeDiffMinutes = Math.abs((actualDateTime.getTime() - scheduledDateTime.getTime()) / (1000 * 60));
+                            return timeDiffMinutes > 1;
+                          })() && (
                             <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
                               <AlertCircle className="w-3 h-3 mr-1" />
                               Time Corrected
