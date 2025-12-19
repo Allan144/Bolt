@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { X, Calendar, Clock, ListFilter as Filter, Download, Pill, TrendingUp, CircleAlert as AlertCircle, CreditCard as Edit2, Trash2, RefreshCw } from 'lucide-react';
-import { MedicationHistory, supabase, AuthUser } from '../lib/supabase';
+import { MedicationHistory, Prescription, supabase, AuthUser } from '../lib/supabase';
 import { MedicationImage } from './MedicationImage';
 
 interface PrescriptionHistoryModalProps {
@@ -14,6 +14,7 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
   onClose,
 }) => {
   const [history, setHistory] = useState<MedicationHistory[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<MedicationHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
@@ -43,18 +44,26 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
 
   const fetchHistory = async () => {
     try {
-      const { data, error } = await supabase
-        .from('medication_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('actual_taken_datetime', { ascending: false });
+      const [historyRes, prescriptionsRes] = await Promise.all([
+        supabase
+          .from('medication_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('actual_taken_datetime', { ascending: false }),
+        supabase
+          .from('prescriptions')
+          .select('*')
+          .eq('user_id', user.id)
+      ]);
 
-      if (error) throw error;
-      
-      setHistory(data || []);
-      
+      if (historyRes.error) throw historyRes.error;
+      if (prescriptionsRes.error) throw prescriptionsRes.error;
+
+      setHistory(historyRes.data || []);
+      setPrescriptions(prescriptionsRes.data || []);
+
       // Extract unique prescription names for filter
-      const uniqueNames = [...new Set((data || []).map(h => h.prescription_name))];
+      const uniqueNames = [...new Set((historyRes.data || []).map(h => h.prescription_name))];
       setPrescriptionNames(uniqueNames);
       
       // Set default date range to last 30 days
@@ -206,6 +215,7 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
     const headers = [
       'Prescription',
       'Dosage',
+      'NDC Code',
       'Scheduled Date',
       'Scheduled Time',
       'Actual Date & Time',
@@ -215,17 +225,21 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
       'Notes'
     ];
 
-    const csvData = filteredHistory.map(entry => [
-      entry.prescription_name,
-      entry.dosage,
-      entry.scheduled_date,
-      entry.scheduled_time,
-      formatActualDateTime(entry.actual_taken_datetime),
-      entry.quantity_taken,
-      getTimeDifference(entry.scheduled_date, entry.scheduled_time, entry.actual_taken_datetime),
-      entry.is_corrected ? 'Yes' : 'No',
-      entry.notes || ''
-    ]);
+    const csvData = filteredHistory.map(entry => {
+      const prescription = prescriptions.find(p => p.id === entry.prescription_id);
+      return [
+        entry.prescription_name,
+        entry.dosage,
+        prescription?.ndc_code || '',
+        entry.scheduled_date,
+        entry.scheduled_time,
+        formatActualDateTime(entry.actual_taken_datetime),
+        entry.quantity_taken,
+        getTimeDifference(entry.scheduled_date, entry.scheduled_time, entry.actual_taken_datetime),
+        entry.is_corrected ? 'Yes' : 'No',
+        entry.notes || ''
+      ];
+    });
 
     const csvContent = [headers, ...csvData]
       .map(row => row.map(cell => `"${cell}"`).join(','))
@@ -462,6 +476,21 @@ export const PrescriptionHistoryModal: React.FC<PrescriptionHistoryModalProps> =
                           <div>
                             <h4 className="font-bold text-gray-900 text-lg">{entry.prescription_name}</h4>
                             <p className="text-gray-600">{entry.dosage}</p>
+                            {(() => {
+                              const prescription = prescriptions.find(p => p.id === entry.prescription_id);
+                              return prescription && (
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <span className="text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded-full">
+                                    {prescription.units_per_dose} {prescription.unit}{prescription.units_per_dose > 1 ? 's' : ''} per dose
+                                  </span>
+                                  {prescription.ndc_code && (
+                                    <span className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded-full">
+                                      NDC: {prescription.ndc_code}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                           {entry.is_corrected && (() => {
                             const scheduledDateTime = new Date(`${entry.scheduled_date}T${entry.scheduled_time}`);

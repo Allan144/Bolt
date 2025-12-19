@@ -304,7 +304,13 @@ export const DoseScheduleScreen: React.FC<DoseScheduleScreenProps> = ({
                         <div className="flex items-center space-x-3 text-sm text-gray-600">
                           <span>{dose.prescription.dosage}</span>
                           <span>•</span>
-                          <span>{dose.quantity} {dose.quantity === 1 ? 'pill' : 'pills'}</span>
+                          <span>{dose.quantity * dose.prescription.units_per_dose} {dose.prescription.unit}{(dose.quantity * dose.prescription.units_per_dose) > 1 ? 's' : ''}</span>
+                          {dose.prescription.ndc_code && (
+                            <>
+                              <span>•</span>
+                              <span>NDC: {dose.prescription.ndc_code}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -182,11 +182,19 @@ export const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-1">{prescription.name}</h3>
             <p className="text-gray-600 mb-2">{prescription.dosage}</p>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                 <Clock className="w-3 h-3 mr-1" />
                 {getScheduleDescription()}
               </span>
+              <span className="inline-flex items-center text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-full">
+                {prescription.units_per_dose} {prescription.unit}{prescription.units_per_dose > 1 ? 's' : ''} per dose
+              </span>
+              {prescription.ndc_code && (
+                <span className="inline-flex items-center text-sm text-gray-500 bg-green-50 px-3 py-1 rounded-full">
+                  NDC: {prescription.ndc_code}
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -28,6 +28,9 @@ export type Prescription = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  ndc_code: string | null;
+  unit: string;
+  units_per_dose: number;
 };
 
 export type DoseSchedule = {

@@ -25,6 +25,9 @@ export const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
     dosage: '',
     notes: '',
     is_active: true,
+    ndc_code: '',
+    unit: 'tablet',
+    units_per_dose: 1,
   });
 
   const [schedules, setSchedules] = useState<{
@@ -52,6 +55,9 @@ export const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
         dosage: prescription.dosage,
         notes: prescription.notes,
         is_active: prescription.is_active,
+        ndc_code: prescription.ndc_code || '',
+        unit: prescription.unit || 'tablet',
+        units_per_dose: prescription.units_per_dose || 1,
       });
 
       if (doseSchedules.length > 0) {
@@ -67,6 +73,9 @@ export const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
         dosage: '',
         notes: '',
         is_active: true,
+        ndc_code: '',
+        unit: 'tablet',
+        units_per_dose: 1,
       });
       setSchedules([
         { dose_time: '08:00', quantity: 1, days_of_week: [1, 2, 3, 4, 5, 6, 7] }
@@ -165,6 +174,60 @@ export const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
               placeholder="100mg, 5ml, 2 tablets"
               required
             />
+          </div>
+
+          {/* NDC Code, Unit, and Units per Dose */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                NDC Code (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.ndc_code}
+                onChange={(e) => setFormData({ ...formData, ndc_code: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
+                placeholder="12345-678-90"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Unit *
+              </label>
+              <select
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
+                required
+              >
+                <option value="tablet">Tablet</option>
+                <option value="capsule">Capsule</option>
+                <option value="ml">Milliliter (ml)</option>
+                <option value="mg">Milligram (mg)</option>
+                <option value="drop">Drop</option>
+                <option value="spray">Spray</option>
+                <option value="patch">Patch</option>
+                <option value="injection">Injection</option>
+                <option value="inhaler">Inhaler</option>
+                <option value="suppository">Suppository</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Units per Dose *
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={formData.units_per_dose}
+                onChange={(e) => setFormData({ ...formData, units_per_dose: parseInt(e.target.value) || 1 })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
+                required
+              />
+            </div>
           </div>
 
           {/* Dose Schedules */}
