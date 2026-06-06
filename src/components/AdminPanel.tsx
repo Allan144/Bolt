@@ -1,263 +1,259 @@
-import React, { useState, useEffect } from 'react';
-import { supabase, AuthUser } from '../lib/supabase';
-import { Trash2, Shield, Users, AlertTriangle, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Shield, Users, MessageSquare, Plus, CreditCard as Edit2, Trash2, X, Save, Database } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { AppUser, ChatAnswer, UserRole } from '../types';
 
-interface AdminPanelProps {
-  currentUser: AuthUser;
+type AdminTab = 'users' | 'chat' | 'tables';
+
+const ChatAnswerForm: React.FC<{
+  answer?: ChatAnswer;
+  onSave: (data: Partial<ChatAnswer>) => void;
   onClose: () => void;
-}
+}> = ({ answer, onSave, onClose }) => {
+  const [form, setForm] = useState({
+    question: answer?.question ?? '',
+    answer: answer?.answer ?? '',
+    keywords: answer?.keywords.join(', ') ?? '',
+    is_active: answer?.is_active ?? true,
+    display_order: answer?.display_order ?? 0,
+  });
 
-interface UserWithStats {
-  id: string;
-  username: string;
-  full_name: string;
-  created_at: string;
-  prescription_count: number;
-  last_login: string | null;
-}
-
-export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onClose }) => {
-  const [users, setUsers] = useState<UserWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      // Get all users with prescription counts
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select(`
-          id,
-          username,
-          full_name,
-          created_at,
-          prescriptions!inner(id)
-        `);
-
-      if (usersError) throw usersError;
-
-      // Transform data to include prescription counts
-      const usersWithStats: UserWithStats[] = usersData.map(user => ({
-        id: user.id,
-        username: user.username,
-        full_name: user.full_name,
-        created_at: user.created_at,
-        prescription_count: user.prescriptions?.length || 0,
-        last_login: null // We don't track this currently
-      }));
-
-      setUsers(usersWithStats);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string, username: string) => {
-    if (userId === currentUser.id) {
-      alert("You cannot delete your own account from the admin panel.");
-      return;
-    }
-
-    setDeleting(userId);
-    
-    try {
-      // Delete from custom users table (this will cascade to prescriptions, schedules, and logs)
-      // Note: This leaves the Supabase Auth user intact, but removes all app data
-      const { error: userError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
-      if (userError) throw userError;
-
-      // Refresh the users list
-      await fetchUsers();
-      setConfirmDelete(null);
-      
-      alert(`User "${username}" has been successfully deleted along with all their app data.`);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert(`Failed to delete user "${username}". Please try again.`);
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const handleSave = () => {
+    onSave({
+      id: answer?.id,
+      question: form.question,
+      answer: form.answer,
+      keywords: form.keywords.split(',').map(k => k.trim()).filter(Boolean),
+      is_active: form.is_active,
+      display_order: form.display_order,
     });
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl shadow-2xl p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Admin Panel</h2>
-              <p className="text-sm text-gray-600">User Management & System Administration</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-400" />
+    <div className="bg-stone-900 border border-amber-700/40 rounded-2xl p-5 space-y-3">
+      <div>
+        <label className="text-stone-400 text-xs uppercase tracking-wide block mb-1.5">Question</label>
+        <input className="input-dark w-full" value={form.question} onChange={e => setForm(f => ({ ...f, question: e.target.value }))} placeholder="What do users ask?" />
+      </div>
+      <div>
+        <label className="text-stone-400 text-xs uppercase tracking-wide block mb-1.5">Answer</label>
+        <textarea className="input-dark w-full resize-none" rows={3} value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} placeholder="Helpful response..." />
+      </div>
+      <div>
+        <label className="text-stone-400 text-xs uppercase tracking-wide block mb-1.5">Keywords (comma-separated)</label>
+        <input className="input-dark w-full" value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="rate, price, cost, fee" />
+      </div>
+      <div className="flex items-center justify-between">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="accent-amber-600" />
+          <span className="text-stone-300 text-sm">Active</span>
+        </label>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="px-3 py-1.5 text-stone-400 hover:text-white text-sm">Cancel</button>
+          <button onClick={handleSave} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-700 hover:bg-amber-600 text-white rounded-lg text-sm">
+            <Save className="w-3.5 h-3.5" />Save
           </button>
-        </div>
-
-        {/* Warning Banner */}
-        <div className="p-4 bg-red-50 border-b border-red-200">
-          <div className="flex items-center space-x-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <div className="text-sm text-red-800">
-              <strong>Warning:</strong> Deleting users will permanently remove all their prescriptions, schedules, and medication logs. This action cannot be undone.
-            </div>
-          </div>
-        </div>
-
-        {/* Users List */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                All Users ({users.length})
-              </h3>
-            </div>
-          </div>
-
-          {users.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No users found</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className={`p-4 border rounded-xl transition-all ${
-                    user.id === currentUser.id
-                      ? 'border-blue-200 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="font-semibold text-gray-900">
-                          @{user.username}
-                          {user.id === currentUser.id && (
-                            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                              You
-                            </span>
-                          )}
-                        </h4>
-                        {user.full_name && (
-                          <span className="text-gray-600">({user.full_name})</span>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                        <div>
-                          <span className="font-medium">Created:</span>
-                          <br />
-                          {formatDate(user.created_at)}
-                        </div>
-                        <div>
-                          <span className="font-medium">Prescriptions:</span>
-                          <br />
-                          {user.prescription_count}
-                        </div>
-                        <div>
-                          <span className="font-medium">User ID:</span>
-                          <br />
-                          <code className="text-xs bg-gray-100 px-1 rounded">
-                            {user.id.substring(0, 8)}...
-                          </code>
-                        </div>
-                      </div>
-                    </div>
-
-                    {user.id !== currentUser.id && (
-                      <div className="ml-4">
-                        {confirmDelete === user.id ? (
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleDeleteUser(user.id, user.username)}
-                              disabled={deleting === user.id}
-                              className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {deleting === user.id ? 'Deleting...' : 'Confirm'}
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="px-3 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(user.id)}
-                            className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span className="text-sm">Delete</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Logged in as admin: <strong>@{currentUser.username}</strong>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Close Admin Panel
-            </button>
-          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const AdminPanel: React.FC<{ user: AppUser }> = ({ user }) => {
+  const [tab, setTab] = useState<AdminTab>('users');
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [chatAnswers, setChatAnswers] = useState<ChatAnswer[]>([]);
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [editingChat, setEditingChat] = useState<ChatAnswer | null>(null);
+  const [newChat, setNewChat] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const KNOWN_TABLES = ['users', 'client_info', 'students', 'calendar_events', 'billing_records', 'lesson_history', 'tickler', 'chat_answers'];
+
+  useEffect(() => {
+    if (tab === 'users') loadUsers();
+    if (tab === 'chat') loadChat();
+  }, [tab]);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('users').select('*').order('created_at');
+    setUsers((data ?? []) as AppUser[]);
+    setLoading(false);
+  };
+
+  const loadChat = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('chat_answers').select('*').order('display_order');
+    setChatAnswers((data ?? []) as ChatAnswer[]);
+    setLoading(false);
+  };
+
+  const updateUserRole = async (id: string, role: UserRole) => {
+    await supabase.from('users').update({ role }).eq('id', id);
+    loadUsers();
+    setEditingUser(null);
+  };
+
+  const deleteUser = async (id: string) => {
+    if (!confirm('Delete this user?')) return;
+    await supabase.from('users').delete().eq('id', id);
+    loadUsers();
+  };
+
+  const saveChatAnswer = async (data: Partial<ChatAnswer>) => {
+    if (data.id) {
+      await supabase.from('chat_answers').update({
+        question: data.question, answer: data.answer,
+        keywords: data.keywords, is_active: data.is_active, display_order: data.display_order
+      }).eq('id', data.id);
+    } else {
+      await supabase.from('chat_answers').insert([{
+        question: data.question, answer: data.answer,
+        keywords: data.keywords ?? [], is_active: data.is_active ?? true, display_order: data.display_order ?? 0
+      }]);
+    }
+    loadChat();
+    setEditingChat(null);
+    setNewChat(false);
+  };
+
+  const deleteChatAnswer = async (id: string) => {
+    if (!confirm('Delete this Q&A entry?')) return;
+    await supabase.from('chat_answers').delete().eq('id', id);
+    loadChat();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-amber-700/30 flex items-center justify-center">
+          <Shield className="w-5 h-5 text-amber-400" />
+        </div>
+        <h1 className="text-2xl font-serif text-white">Admin Panel</h1>
+      </div>
+
+      <div className="flex rounded-xl overflow-hidden border border-stone-700 w-fit">
+        {([
+          { id: 'users', label: 'Users', icon: Users },
+          { id: 'chat', label: 'Chatbot Q&A', icon: MessageSquare },
+          { id: 'tables', label: 'Tables', icon: Database },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setTab(id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${tab === id ? 'bg-amber-700 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}`}>
+            <Icon className="w-4 h-4" />{label}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" /></div>}
+
+      {tab === 'users' && !loading && (
+        <div className="bg-stone-800 border border-stone-700/50 rounded-2xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-stone-500 text-xs uppercase tracking-wide border-b border-stone-700 bg-stone-900/40">
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Role</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-700/30">
+              {users.map(u => (
+                <tr key={u.id} className="hover:bg-stone-700/20 transition-colors">
+                  <td className="px-4 py-3 text-white">{u.display_name}</td>
+                  <td className="px-4 py-3 text-stone-400">{u.email}</td>
+                  <td className="px-4 py-3">
+                    {editingUser?.id === u.id ? (
+                      <select className="input-dark text-xs" defaultValue={u.role} onChange={e => updateUserRole(u.id, e.target.value as UserRole)}>
+                        <option value="admin">admin</option>
+                        <option value="teacher">teacher</option>
+                        <option value="parent">parent</option>
+                        <option value="student">student</option>
+                      </select>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-stone-700 text-stone-300 capitalize">{u.role}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => setEditingUser(editingUser?.id === u.id ? null : u)} className="p-1.5 text-stone-400 hover:text-amber-400 hover:bg-stone-700 rounded-lg">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      {u.id !== user.id && (
+                        <button onClick={() => deleteUser(u.id)} className="p-1.5 text-stone-400 hover:text-red-400 hover:bg-stone-700 rounded-lg">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === 'chat' && !loading && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <button onClick={() => setNewChat(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-700 hover:bg-amber-600 text-white rounded-xl text-sm">
+              <Plus className="w-4 h-4" />Add Q&A
+            </button>
+          </div>
+          {(newChat || editingChat) && (
+            <ChatAnswerForm
+              answer={newChat ? undefined : editingChat ?? undefined}
+              onSave={saveChatAnswer}
+              onClose={() => { setNewChat(false); setEditingChat(null); }}
+            />
+          )}
+          {chatAnswers.map(a => (
+            <div key={a.id} className="bg-stone-800 border border-stone-700/50 rounded-2xl p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-white text-sm font-medium mb-1">{a.question}</p>
+                  <p className="text-stone-400 text-sm leading-relaxed">{a.answer}</p>
+                  {a.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {a.keywords.map(k => (
+                        <span key={k} className="px-1.5 py-0.5 bg-stone-700 text-stone-400 text-xs rounded">{k}</span>
+                      ))}
+                    </div>
+                  )}
+                  {!a.is_active && <span className="text-xs text-stone-500 mt-1 block">Inactive</span>}
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <button onClick={() => { setEditingChat(a); setNewChat(false); }} className="p-1.5 text-stone-400 hover:text-amber-400 hover:bg-stone-700 rounded-lg">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => deleteChatAnswer(a.id)} className="p-1.5 text-stone-400 hover:text-red-400 hover:bg-stone-700 rounded-lg">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'tables' && (
+        <div className="space-y-3">
+          <p className="text-stone-400 text-sm">Database tables in the LCE Lessons application. Use the Supabase dashboard for advanced schema management.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {KNOWN_TABLES.map(t => (
+              <div key={t} className="bg-stone-800 border border-stone-700/50 rounded-xl p-4 flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <span className="text-stone-300 text-sm font-mono">{t}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-stone-500 text-xs">Tables: users, client_info, students, calendar_events, billing_records, lesson_history, tickler, chat_answers — all with RLS enabled.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminPanel;

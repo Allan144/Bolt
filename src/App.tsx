@@ -1,81 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { AuthForm } from './components/AuthForm';
-import { Dashboard } from './components/Dashboard';
-import { AuthUser, validateStoredAuth } from './lib/supabase';
+import { AppUser } from './types';
+import { validateStoredAuth } from './lib/auth';
 import { initializeCapacitor } from './lib/capacitor';
+import LandingPage from './components/landing/LandingPage';
+import AuthForm from './components/AuthForm';
+import Dashboard from './components/Dashboard';
+
+type AppView = 'landing' | 'auth' | 'app';
 
 function App() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [view, setView] = useState<AppView>('landing');
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showApp, setShowApp] = useState(true);
 
   useEffect(() => {
-    // Check for stored authentication session
-    const initializeAuth = async () => {
+    const init = async () => {
       try {
-        // Initialize Capacitor for mobile platforms
         await initializeCapacitor();
-        
-        // Validate current Supabase session
-        const validatedUser = await validateStoredAuth();
-        if (validatedUser) {
-          setUser(validatedUser);
+        const validUser = await validateStoredAuth();
+        if (validUser) {
+          setUser(validUser);
+          setView('app');
         }
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
+      } catch (err) {
+        console.error('Init error:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    
-    initializeAuth();
+    init();
   }, []);
 
-  const handleAuthSuccess = (userData: AuthUser) => {
+  const handleAuthSuccess = (userData: AppUser) => {
     setUser(userData);
+    setView('app');
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     setUser(null);
+    setView('landing');
   };
-
-  const handleExit = () => {
-    setShowApp(false);
-  };
-
-  if (!showApp) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
-            <div className="text-6xl">👋</div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Thank you for using MedReminder Pro</h1>
-          <p className="text-gray-600 text-lg">Your medication management companion</p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
-          <p className="text-gray-600 text-lg">Initializing secure session...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4" />
+          <p className="text-stone-400 text-sm">Loading LCE Lessons...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="App">
-      {user ? (
-        <Dashboard user={user} onSignOut={handleSignOut} onExit={handleExit} />
-      ) : (
-        <AuthForm onAuthSuccess={handleAuthSuccess} onExit={handleExit} />
-      )}
-    </div>
-  );
+  if (view === 'app' && user) {
+    return <Dashboard user={user} onSignOut={handleSignOut} />;
+  }
+
+  if (view === 'auth') {
+    return <AuthForm onAuthSuccess={handleAuthSuccess} onBack={() => setView('landing')} />;
+  }
+
+  return <LandingPage onEnterApp={() => setView('auth')} />;
 }
 
 export default App;

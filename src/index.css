@@ -1,3 +1,157 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Georgia', serif;
+  }
+
+  body {
+    @apply bg-stone-950 text-white;
+    font-family: 'system-ui', -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .input-dark {
+    @apply bg-stone-800 border border-stone-700 text-white rounded-xl px-3 py-2.5 text-sm
+           focus:outline-none focus:border-amber-600 transition-colors placeholder-stone-600;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeInUp {
+    animation: fadeInUp 0.7s ease forwards;
+    opacity: 0;
+  }
+}
+
+/* FullCalendar dark theme overrides */
+.lce-calendar .fc {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #e7e5e4;
+}
+
+.lce-calendar .fc-toolbar-title {
+  color: #f5f5f4;
+  font-size: 1.1rem;
+  font-family: Georgia, serif;
+}
+
+.lce-calendar .fc-button {
+  background: #292524 !important;
+  border-color: #44403c !important;
+  color: #d6d3d1 !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  transition: all 0.15s;
+}
+
+.lce-calendar .fc-button:hover {
+  background: #3c3836 !important;
+  border-color: #57534e !important;
+}
+
+.lce-calendar .fc-button-active {
+  background: #b45309 !important;
+  border-color: #92400e !important;
+  color: #fff !important;
+}
+
+.lce-calendar .fc-col-header-cell {
+  background: #1c1917 !important;
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-col-header-cell-cushion {
+  color: #a8a29e;
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 4px;
+}
+
+.lce-calendar .fc-timegrid-slot {
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-timegrid-slot-label {
+  color: #78716c;
+  font-size: 11px;
+}
+
+.lce-calendar .fc-daygrid-day {
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-daygrid-day-number {
+  color: #a8a29e;
+}
+
+.lce-calendar .fc-daygrid-day.fc-day-today,
+.lce-calendar .fc-timegrid-col.fc-day-today {
+  background: rgba(180, 83, 9, 0.08) !important;
+}
+
+.lce-calendar .fc-scrollgrid {
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-scrollgrid-section > * {
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-event {
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  padding: 2px 4px !important;
+}
+
+.lce-calendar .fc-now-indicator-line {
+  border-color: #f59e0b !important;
+}
+
+.lce-calendar .fc-highlight {
+  background: rgba(180, 83, 9, 0.2) !important;
+}
+
+.lce-calendar .fc-list-event {
+  background: transparent !important;
+}
+
+.lce-calendar .fc-list-event-dot {
+  border-color: #b45309 !important;
+}
+
+.lce-calendar .fc-list-event-title a {
+  color: #e7e5e4 !important;
+}
+
+.lce-calendar .fc-list-day-cushion {
+  background: #1c1917 !important;
+  color: #a8a29e !important;
+}
+
+.lce-calendar .fc-list-table {
+  border-color: #292524 !important;
+}
+
+.lce-calendar .fc-theme-standard td,
+.lce-calendar .fc-theme-standard th {
+  border-color: #292524 !important;
+}
